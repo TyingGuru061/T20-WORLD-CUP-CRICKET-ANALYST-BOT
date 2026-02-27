@@ -1,43 +1,31 @@
-def calculate_nrr(runs_scored, overs_faced, runs_conceded, overs_bowled):
-    return (runs_scored / overs_faced) - (runs_conceded / overs_bowled)
+def analyze_qualification(df, team_name):
 
+    df = df.sort_values(by=["points", "nrr"], ascending=False)
+    top4 = df.head(4)
 
-def updated_nrr(stats, add_runs_scored, add_overs_faced,
-                add_runs_conceded, add_overs_bowled):
+    if team_name not in df["team"].values:
+        return "Team not found in tournament table."
 
-    rs = stats["runs_scored"] + add_runs_scored
-    of = stats["overs_faced"] + add_overs_faced
-    rc = stats["runs_conceded"] + add_runs_conceded
-    ob = stats["overs_bowled"] + add_overs_bowled
+    team_row = df[df["team"] == team_name].iloc[0]
 
-    return calculate_nrr(rs, of, rc, ob)
+    position = df.index[df["team"] == team_name][0] + 1
 
+    analysis = f"""
+📊 Qualification Analysis for {team_name}
 
-def required_run_margin(team_stats, target_nrr, assumed_score=170, overs=20):
-    for margin in range(1, 201):
-        new_nrr = updated_nrr(
-            team_stats,
-            assumed_score,
-            overs,
-            assumed_score - margin,
-            overs
-        )
-        if new_nrr > target_nrr:
-            return margin
-    return "Extremely difficult"
+Current Position: {position}
+Points: {team_row['points']}
+NRR: {team_row['nrr']}
 
+Top 4 Teams Currently:
+"""
 
-def required_chase_overs(team_stats, target_nrr, opponent_score=170, overs=20):
-    o = 1.0
-    while o <= overs:
-        new_nrr = updated_nrr(
-            team_stats,
-            opponent_score,
-            o,
-            opponent_score,
-            overs
-        )
-        if new_nrr > target_nrr:
-            return round(o, 1)
-        o += 0.5
-    return "Must win very early"
+    for _, row in top4.iterrows():
+        analysis += f"\n- {row['team']} ({row['points']} pts, NRR {row['nrr']})"
+
+    if position <= 4:
+        analysis += "\n\nStatus: Currently in qualification zone."
+    else:
+        analysis += "\n\nStatus: Outside top 4. Must win remaining matches."
+
+    return analysis
